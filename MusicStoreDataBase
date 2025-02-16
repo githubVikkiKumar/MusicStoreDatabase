@@ -1,0 +1,179 @@
+CREATE DATABASE MusicStore;
+USE MusicStore;
+CREATE TABLE Artists (
+    ArtistId INT PRIMARY KEY AUTO_INCREMENT,
+    Name VARCHAR(255) NOT NULL
+);
+INSERT INTO Artists (Name) VALUES ('The Beatles'), ('Pink Floyd'), ('Queen');
+
+
+CREATE TABLE Albums (
+    AlbumId INT PRIMARY KEY AUTO_INCREMENT,
+    Title VARCHAR(255) NOT NULL,
+    ArtistId INT,
+    FOREIGN KEY (ArtistId) REFERENCES Artists(ArtistId)
+);
+
+
+INSERT INTO Albums (Title, ArtistId) VALUES ('Abbey Road', 1), ('The Wall', 2), ('A Night at the Opera', 3);
+
+
+CREATE TABLE Tracks (
+    TrackId INT PRIMARY KEY AUTO_INCREMENT,
+    Name VARCHAR(255) NOT NULL,
+    AlbumId INT,
+    MediaTypeId INT,
+    GenreId INT,
+    Composer VARCHAR(255),
+    Milliseconds INT,
+    Bytes INT,
+    UnitPrice DECIMAL(5,2),
+    FOREIGN KEY (AlbumId) REFERENCES Albums(AlbumId),
+    FOREIGN KEY (MediaTypeId) REFERENCES MediaTypes(MediaTypeId),
+    FOREIGN KEY (GenreId) REFERENCES Genres(GenreId)
+);
+
+INSERT INTO Tracks (Name, AlbumId, MediaTypeId, GenreId, Composer, Milliseconds, Bytes, UnitPrice) 
+VALUES 
+    ('Come Together', 1, 1, 1, 'John Lennon', 259000, 5000000, 1.29),
+    ('Comfortably Numb', 2, 2, 1, 'David Gilmour', 384000, 7000000, 1.49),
+    ('Bohemian Rhapsody', 3, 3, 1, 'Freddie Mercury', 354000, 6000000, 1.39);
+
+
+
+
+CREATE TABLE MediaTypes (
+    MediaTypeId INT PRIMARY KEY AUTO_INCREMENT,
+    Name VARCHAR(100)
+);
+INSERT INTO MediaTypes (Name) VALUES ('MP3'), ('AAC'), ('FLAC');
+
+CREATE TABLE Genres (
+    GenreId INT PRIMARY KEY AUTO_INCREMENT,
+    Name VARCHAR(100)
+);
+
+
+INSERT INTO Genres (Name) VALUES ('Rock'), ('Pop'), ('Jazz');
+
+
+CREATE TABLE Playlists (
+    PlaylistId INT PRIMARY KEY AUTO_INCREMENT,
+    Name VARCHAR(255) NOT NULL
+);
+INSERT INTO Playlists (Name) VALUES ('My Favorites'), ('Rock Classics');
+
+
+
+CREATE TABLE PlaylistTracks (
+    PlaylistId INT,
+    TrackId INT,
+    PRIMARY KEY (PlaylistId, TrackId),
+    FOREIGN KEY (PlaylistId) REFERENCES Playlists(PlaylistId),
+    FOREIGN KEY (TrackId) REFERENCES Tracks(TrackId)
+);
+
+INSERT INTO PlaylistTracks (PlaylistId, TrackId) VALUES (1, 1), (1, 2), (2, 3);
+
+
+CREATE TABLE Employees (
+    EmployeeId INT PRIMARY KEY AUTO_INCREMENT,
+    FirstName VARCHAR(100),
+    LastName VARCHAR(100),
+    Title VARCHAR(255),
+    ReportsTo INT,
+    HireDate DATE,
+    Address VARCHAR(255),
+    City VARCHAR(100),
+    State VARCHAR(100),
+    Country VARCHAR(100),
+    PostalCode VARCHAR(20),
+    Phone VARCHAR(20),
+    Email VARCHAR(255),
+    FOREIGN KEY (ReportsTo) REFERENCES Employees(EmployeeId)
+);
+
+INSERT INTO Employees (FirstName, LastName, Title, ReportsTo, HireDate, Address, City, State, Country, PostalCode, Phone, Email)
+VALUES ('John', 'Doe', 'Manager', NULL, '2020-01-15', '123 Main St', 'New York', 'NY', 'USA', '10001', '123-456-7890', 'johndoe@example.com');
+
+
+
+CREATE TABLE Customers (
+    CustomerId INT PRIMARY KEY AUTO_INCREMENT,
+    FirstName VARCHAR(100),
+    LastName VARCHAR(100),
+    Company VARCHAR(255),
+    Address VARCHAR(255),
+    City VARCHAR(100),
+    State VARCHAR(100),
+    Country VARCHAR(100),
+    PostalCode VARCHAR(20),
+    Phone VARCHAR(20),
+    Email VARCHAR(255),
+    SupportRepId INT,
+    FOREIGN KEY (SupportRepId) REFERENCES Employees(EmployeeId)
+);
+INSERT INTO Customers (FirstName, LastName, Company, Address, City, State, Country, PostalCode, Phone, Email, SupportRepId)
+VALUES ('Jane', 'Smith', 'Tech Corp', '456 Elm St', 'Los Angeles', 'CA', 'USA', '90001', '987-654-3210', 'janesmith@example.com', 1);
+
+
+
+
+CREATE TABLE Invoices (
+    InvoiceId INT PRIMARY KEY AUTO_INCREMENT,
+    CustomerId INT,
+    InvoiceDate DATETIME,
+    BillingAddress VARCHAR(255),
+    BillingCity VARCHAR(100),
+    BillingState VARCHAR(100),
+    BillingCountry VARCHAR(100),
+    BillingPostalCode VARCHAR(20),
+    Total DECIMAL(10,2),
+    FOREIGN KEY (CustomerId) REFERENCES Customers(CustomerId)
+);
+
+INSERT INTO Invoices (CustomerId, InvoiceDate, BillingAddress, BillingCity, BillingState, BillingCountry, BillingPostalCode, Total)
+VALUES (1, '2024-02-16', '456 Elm St', 'Los Angeles', 'CA', 'USA', '90001', 19.99);
+
+
+
+
+CREATE TABLE InvoiceLines (
+    InvoiceLineId INT PRIMARY KEY AUTO_INCREMENT,
+    InvoiceId INT,
+    TrackId INT,
+    UnitPrice DECIMAL(5,2),
+    Quantity INT,
+    FOREIGN KEY (InvoiceId) REFERENCES Invoices(InvoiceId),
+    FOREIGN KEY (TrackId) REFERENCES Tracks(TrackId)
+);
+
+INSERT INTO InvoiceLines (InvoiceId, TrackId, UnitPrice, Quantity)
+VALUES (1, 1, 1.29, 2), (1, 2, 1.49, 1);
+
+SELECT t.Name, a.Title, ar.Name AS Artist 
+FROM Tracks t
+JOIN Albums a ON t.AlbumId = a.AlbumId
+JOIN Artists ar ON a.ArtistId = ar.ArtistId
+WHERE a.Title = 'Abbey Road';
+
+
+
+SELECT p.Name AS Playlist, t.Name AS Track 
+FROM Playlists p
+JOIN PlaylistTracks pt ON p.PlaylistId = pt.PlaylistId
+JOIN Tracks t ON pt.TrackId = t.TrackId
+WHERE p.Name = 'My Favorites';
+
+SELECT i.InvoiceId, i.InvoiceDate, i.Total, c.FirstName, c.LastName 
+FROM Invoices i
+JOIN Customers c ON i.CustomerId = c.CustomerId
+WHERE c.FirstName = 'Jane' AND c.LastName = 'Smith';
+
+
+SELECT t.Name, SUM(il.UnitPrice * il.Quantity) AS TotalSales 
+FROM InvoiceLines il
+JOIN Tracks t ON il.TrackId = t.TrackId
+GROUP BY t.Name
+ORDER BY TotalSales DESC;
+
